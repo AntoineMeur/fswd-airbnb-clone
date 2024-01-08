@@ -3,16 +3,20 @@ module Api
       def create
         token = cookies.signed[:airbnb_session_token]
         session = Session.find_by(token: token)
-        return render json: { error: 'user not logged in' }, status: :unauthorized if !session
+        return render json: { error: 'user not logged in' }, status: :unauthorized unless session
   
-        property = Property.find_by(id: params[:booking][:property_id])
-        return render json: { error: 'cannot find property' }, status: :not_found if !property
+        @booking = Booking.new({
+          property_id: params[:booking][:property_id],
+          start_date: params[:booking][:start_date],
+          end_date: params[:booking][:end_date],
+          user_id: session.user.id,
+          paid: false, 
+        })
   
-        begin
-          @booking = Booking.create({ user_id: session.user.id, property_id: property.id, start_date: params[:booking][:start_date], end_date: params[:booking][:end_date]})
+        if @booking.save
           render 'api/bookings/create', status: :created
-        rescue ArgumentError => e
-          render json: { error: e.message }, status: :bad_request
+        else
+          render json: { error: 'booking could not be created' }, status: :bad_request
         end
       end
   
@@ -28,6 +32,11 @@ module Api
   
       def booking_params
         params.require(:booking).permit(:property_id, :start_date, :end_date)
+      end
+
+      def index
+        @bookings = Booking.where(user_id: session.user.id)
+        render 'api/bookings/index'
       end
     end
   end

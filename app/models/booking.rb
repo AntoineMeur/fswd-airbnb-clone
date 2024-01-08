@@ -1,11 +1,13 @@
 class Booking < ApplicationRecord
     belongs_to :user
     belongs_to :property
+    has_many :charges
   
     validates :start_date, presence: true
     validates :end_date, presence: true
     validates :user, presence: true
     validates :property, presence: true
+    validates :paid, inclusion: { in: [true, false] }
   
     before_validation :check_start_date_smaller_than_end_date
     before_validation :check_availability
